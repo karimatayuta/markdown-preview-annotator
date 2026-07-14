@@ -6,7 +6,6 @@ const LINE_HEIGHTS = new Set(['compact', 'normal', 'relaxed']);
 export interface WebviewHtmlOptions {
   cspSource: string;
   mainScriptUri: string;
-  mermaidScriptUri?: string;
   styleUri: string;
   renderedMarkdown: string;
   documentTitle: string;
@@ -52,10 +51,6 @@ export function getWebviewHtml(options: WebviewHtmlOptions): string {
     initialAnnotations: options.initialAnnotations,
     prefs,
   });
-  const mermaidScript = options.mermaidScriptUri
-    ? `\n  <script src="${options.mermaidScriptUri}" nonce="${options.nonce}"></script>`
-    : '';
-
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -143,7 +138,7 @@ export function getWebviewHtml(options: WebviewHtmlOptions): string {
     </div>
   </form>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script id="boot-data" type="application/json" nonce="${options.nonce}">${bootData}</script>${mermaidScript}
+  <script id="boot-data" type="application/json" nonce="${options.nonce}">${bootData}</script>
   <script src="${options.mainScriptUri}" nonce="${options.nonce}"></script>
 </body>
 </html>`;

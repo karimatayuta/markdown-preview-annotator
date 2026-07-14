@@ -1,6 +1,6 @@
 # 拡張の実行に必要なのは dist/(バンドル済み本体)と media/(webview資産)のみ。
 # markdown-it / highlight.js は dist/extension.js に、webviewスクリプトは media/main.js に
-# バンドルされ、mermaid.min.js はビルド時に media/ へコピーされる。
+# バンドルされる。beautiful-mermaidもmedia/main.jsに含まれる。
 .git/**
 .gitignore
 .github/**
@@ -11,6 +11,8 @@
 .codex/**
 bun.lock
 coverage/**
+docs/screenshots/**
+media/mermaid.min.js
 node_modules/**
 src/**
 test/**

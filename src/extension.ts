@@ -61,9 +61,6 @@ export function activate(
     const mainScriptUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(context.extensionUri, 'media', 'main.js'),
     );
-    const mermaidScriptUri = panel.webview.asWebviewUri(
-      vscode.Uri.joinPath(context.extensionUri, 'media', 'mermaid.min.js'),
-    );
     const styleUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(context.extensionUri, 'media', 'styles.css'),
     );
@@ -71,7 +68,6 @@ export function activate(
     panel.webview.html = getWebviewHtml({
       cspSource: panel.webview.cspSource,
       mainScriptUri: mainScriptUri.toString(),
-      mermaidScriptUri: mermaidScriptUri.toString(),
       styleUri: styleUri.toString(),
       renderedMarkdown: renderMarkdown(document.getText()),
       documentTitle: path.basename(document.fileName),

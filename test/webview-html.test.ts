@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { getWebviewHtml, sanitizePrefs, type WebviewHtmlOptions } from '../src/webview-html';
 
-const baseOptions: WebviewHtmlOptions = {
+const baseOptions: WebviewHtmlOptions & { mermaidScriptUri: string } = {
   cspSource: 'webview:',
   mainScriptUri: 'webview://main.js',
   mermaidScriptUri: 'webview://mermaid.min.js',
@@ -47,10 +47,10 @@ describe('getWebviewHtml', () => {
     assert.match(html, /<body class="width-readable">/);
   });
 
-  it('should load the mermaid runtime with the shared nonce', () => {
+  it('should use the bundled renderer without loading an external Mermaid runtime', () => {
     const html = getWebviewHtml(baseOptions);
 
-    assert.match(html, /<script src="webview:\/\/mermaid\.min\.js" nonce="fixed-nonce"><\/script>/);
+    assert.doesNotMatch(html, /mermaid\.min\.js/);
   });
 
   it('should include the display settings popover', () => {

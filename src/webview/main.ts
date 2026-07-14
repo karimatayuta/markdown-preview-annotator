@@ -1,4 +1,5 @@
 import { resolveAnchor } from './anchor';
+import { renderModernMermaid } from './beautiful-mermaid';
 import type {
   Annotation,
   FontFamily,
@@ -19,11 +20,6 @@ interface VsCodeWebviewApi {
   postMessage(message: WebviewToHostMessage): void;
 }
 
-interface MermaidApi {
-  initialize(config: Record<string, unknown>): void;
-  render(id: string, text: string): Promise<{ svg: string }>;
-}
-
 interface BootData {
   documentTitle?: string;
   filePath?: string;
@@ -34,7 +30,6 @@ interface BootData {
 export type WebviewWindow = Window &
   typeof globalThis & {
     acquireVsCodeApi: () => VsCodeWebviewApi;
-    mermaid?: MermaidApi;
   };
 
 const FONT_STACKS: Record<FontFamily, string> = {
@@ -372,6 +367,7 @@ export function initializeWebview(win: WebviewWindow): void {
     deleteButton.className = 'danger compact';
     deleteButton.textContent = '削除';
     deleteButton.addEventListener('click', () => {
+      clearActiveHighlight();
       annotations.splice(index, 1);
       persistAnnotations();
       renderAnnotations();
@@ -642,6 +638,7 @@ export function initializeWebview(win: WebviewWindow): void {
     vscode.postMessage({ type: 'copy', annotations });
   });
   clearButton.addEventListener('click', () => {
+    clearActiveHighlight();
     annotations = [];
     persistAnnotations();
     renderAnnotations();
@@ -665,31 +662,9 @@ export function initializeWebview(win: WebviewWindow): void {
 
   // ---- Mermaid ---------------------------------------------------------
 
-  let mermaidReady = false;
   let mermaidCounter = 0;
 
-  function setupMermaid(): void {
-    const mermaid = win.mermaid;
-    if (!mermaid?.initialize) {
-      return;
-    }
-    const dark =
-      doc.body.classList.contains('vscode-dark') ||
-      doc.body.classList.contains('vscode-high-contrast');
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      suppressErrorRendering: true,
-      theme: dark ? 'dark' : 'default',
-      fontFamily: 'var(--vscode-font-family)',
-    });
-    mermaidReady = true;
-  }
-
-  async function renderMermaidBlocks(): Promise<void> {
-    if (!mermaidReady || !win.mermaid) {
-      return;
-    }
+  function renderMermaidBlocks(): void {
     const figures = preview.querySelectorAll<HTMLElement>(
       '.mermaid-figure:not([data-mermaid-done])',
     );
@@ -699,11 +674,11 @@ export function initializeWebview(win: WebviewWindow): void {
         continue;
       }
       figure.dataset['mermaidDone'] = 'true';
-      mermaidCounter += 1;
       try {
-        const { svg } = await win.mermaid.render(
-          `mpa-mermaid-${mermaidCounter}`,
+        mermaidCounter += 1;
+        const svg = renderModernMermaid(
           source.textContent ?? '',
+          `mpa-mermaid-${mermaidCounter}`,
         );
         const host = doc.createElement('div');
         host.className = 'mermaid-render';
@@ -725,7 +700,7 @@ export function initializeWebview(win: WebviewWindow): void {
       hideBubble();
       renderAnnotations();
       persistAnnotations();
-      void renderMermaidBlocks();
+      renderMermaidBlocks();
     }
     if (message.type === 'prefsUpdate' && message.prefs) {
       prefs = { ...prefs, ...message.prefs };
@@ -738,7 +713,6 @@ export function initializeWebview(win: WebviewWindow): void {
   });
 
   applyPrefs();
-  setupMermaid();
-  void renderMermaidBlocks();
+  renderMermaidBlocks();
   renderAnnotations();
 }

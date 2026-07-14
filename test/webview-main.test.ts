@@ -55,6 +55,22 @@ function createEnvironment(
   const win = dom.window as unknown as WebviewWindow & {
     acquireVsCodeApi: unknown;
   };
+  const highlights = new Map<string, unknown>();
+  Object.defineProperty(win, 'CSS', {
+    configurable: true,
+    value: {
+      highlights: {
+        set: (name: string, highlight: unknown) => highlights.set(name, highlight),
+        delete: (name: string) => highlights.delete(name),
+      },
+    },
+  });
+  Object.defineProperty(win, 'Highlight', {
+    configurable: true,
+    value: class {
+      constructor(..._ranges: Range[]) {}
+    },
+  });
   win.acquireVsCodeApi = () => ({
     getState: () => state.value as ReturnType<ReturnType<WebviewWindow['acquireVsCodeApi']>['getState']>,
     setState: (value: unknown) => {
@@ -63,7 +79,7 @@ function createEnvironment(
     postMessage: (message: WebviewToHostMessage) => messages.push(message),
   });
   initializeWebview(win);
-  return { window: dom.window, messages, state };
+  return { window: dom.window, highlights, messages, state };
 }
 
 function selectPreviewText(window: JSDOM['window']) {
@@ -111,6 +127,38 @@ describe('initializeWebview', () => {
     (window.document.querySelector('#clear-all') as HTMLButtonElement).click();
 
     assert.equal(window.document.querySelector('#annotation-count')!.textContent, '0');
+  });
+
+  it('should clear the active highlight when an annotation is deleted', () => {
+    const { window, highlights } = createEnvironment([
+      structuredClone(persistedAnnotation),
+    ]);
+    const card = window.document.querySelector('.annotation-card')!;
+    card.dispatchEvent(new window.MouseEvent('mouseenter'));
+    if (!highlights.has('annotation-active')) {
+      throw new Error('Test setup did not activate the annotation highlight.');
+    }
+
+    [...window.document.querySelectorAll<HTMLButtonElement>('.annotation-card-actions button')]
+      .find((button) => button.textContent === '削除')!
+      .click();
+
+    assert.equal(highlights.has('annotation-active'), false);
+  });
+
+  it('should clear the active highlight when all annotations are deleted', () => {
+    const { window, highlights } = createEnvironment([
+      structuredClone(persistedAnnotation),
+    ]);
+    const card = window.document.querySelector('.annotation-card')!;
+    card.dispatchEvent(new window.MouseEvent('mouseenter'));
+    if (!highlights.has('annotation-active')) {
+      throw new Error('Test setup did not activate the annotation highlight.');
+    }
+
+    (window.document.querySelector('#clear-all') as HTMLButtonElement).click();
+
+    assert.equal(highlights.has('annotation-active'), false);
   });
 
   it('should show the comment bubble when preview text is selected', () => {
@@ -238,5 +286,65 @@ describe('initializeWebview', () => {
     (preview.querySelector('.code-copy') as HTMLButtonElement).click();
 
     assert.deepEqual(messages.at(-1), { type: 'copyCode', code: 'const x = 1;\n' });
+  });
+
+  it('should render Mermaid figures with the bundled modern renderer', () => {
+    const { window } = createEnvironment();
+
+    window.dispatchEvent(
+      new window.MessageEvent('message', {
+        data: {
+          type: 'sourceUpdate',
+          html:
+            '<figure class="mermaid-figure">' +
+            '<pre class="mermaid-source">flowchart LR\nA --&gt; B</pre>' +
+            '</figure>',
+        },
+      }),
+    );
+
+    assert.equal(window.document.querySelector('.mermaid-render svg') !== null, true);
+  });
+
+  it('should keep SVG definition IDs unique across Mermaid figures', () => {
+    const { window } = createEnvironment();
+
+    window.dispatchEvent(
+      new window.MessageEvent('message', {
+        data: {
+          type: 'sourceUpdate',
+          html:
+            '<figure class="mermaid-figure">' +
+            '<pre class="mermaid-source">flowchart LR\nA --&gt; B</pre>' +
+            '</figure>' +
+            '<figure class="mermaid-figure">' +
+            '<pre class="mermaid-source">flowchart LR\nC --&gt; D</pre>' +
+            '</figure>',
+        },
+      }),
+    );
+
+    const markerIds = [
+      ...window.document.querySelectorAll<SVGMarkerElement>('.mermaid-render marker[id]'),
+    ].map((marker) => marker.id);
+    assert.equal(markerIds.length, new Set(markerIds).size);
+  });
+
+  it('should preserve source and mark unsupported Mermaid diagrams as errors', () => {
+    const { window } = createEnvironment();
+
+    window.dispatchEvent(
+      new window.MessageEvent('message', {
+        data: {
+          type: 'sourceUpdate',
+          html:
+            '<figure class="mermaid-figure">' +
+            '<pre class="mermaid-source">mindmap\n  root((Root))</pre>' +
+            '</figure>',
+        },
+      }),
+    );
+
+    assert.equal(window.document.querySelector('.mermaid-error .mermaid-source') !== null, true);
   });
 });

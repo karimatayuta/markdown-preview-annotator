@@ -1,7 +1,10 @@
 import { describe, it } from 'bun:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import manifest from '../package.json';
+
+const vscodeIgnore = readFileSync(new URL('../.vscodeignore', import.meta.url), 'utf8');
 
 describe('extension manifest', () => {
   it('should activate only when the preview command is invoked', () => {
@@ -42,5 +45,17 @@ describe('extension manifest', () => {
     assert.equal(properties['markdownPreviewAnnotator.fontSize'].default, 14);
     assert.equal(properties['markdownPreviewAnnotator.fontFamily'].default, 'theme');
     assert.equal(properties['markdownPreviewAnnotator.lineHeight'].default, 'normal');
+  });
+
+  it('should minify the bundled webview renderer', () => {
+    assert.match(manifest.scripts['build:webview'], /--minify/);
+  });
+
+  it('should exclude the removed legacy Mermaid runtime from VSIX packages', () => {
+    assert.match(vscodeIgnore, /^media\/mermaid\.min\.js$/m);
+  });
+
+  it('should exclude browser verification screenshots from VSIX packages', () => {
+    assert.match(vscodeIgnore, /^docs\/screenshots\/\*\*$/m);
   });
 });

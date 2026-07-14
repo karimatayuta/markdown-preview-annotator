@@ -11,7 +11,7 @@ Markdownのプレビューを読みながら、選んだ文章へコメントを
 - コメントから元Markdownの行へ移動できます。
 - 全コメントを、ファイル名・行番号・引用文つきでコピーできます。
 - コードブロックは言語バッジつきでシンタックスハイライトされ、ワンクリックでコピーできます。配色はVS Codeのテーマ(ライト/ダーク)に連動し、OSの外観設定に影響されません。
-- Mermaidのコードブロックは図として描画されます。
+- Mermaidのコードブロックは`beautiful-mermaid`で、余白と配色を整えたモダンなSVGとして描画されます。
 - テーブルは横スクロール可能な枠に収まり、行の縞模様とホバー強調で読みやすくなります。
 - ツールバーの「Aa」から文字サイズ・フォント・行間・本文幅をその場で変更できます。
 - ファイルの編集後も、選択文と前後の文脈から注釈位置を探し直します。
@@ -30,7 +30,7 @@ bun install
 bun run package:vsix
 ```
 
-型チェック・ビルド・テストを通したうえで、ルートに `markdown-preview-annotator-0.2.2.vsix` ができます。
+型チェック・ビルド・テストを通したうえで、ルートに `markdown-preview-annotator-0.3.1.vsix` ができます。
 
 ### 2. VS Codeへ入れる
 
@@ -39,10 +39,10 @@ bun run package:vsix
 CLIから入れる場合は次のコマンドでも導入できます。
 
 ```bash
-code --install-extension markdown-preview-annotator-0.2.2.vsix
+code --install-extension markdown-preview-annotator-0.3.1.vsix
 ```
 
-VSIXから入れた拡張機能は、自動更新されません。更新版を作った場合は、同じ手順で入れ直してください。入れ直したあとはウィンドウの再読み込み(`Developer: Reload Window`)を行い、拡張機能ビューでバージョンが `0.2.2` になっていることを確認してください。古いバージョンのまま動いていると、表示設定ボタンやMermaid描画などの新機能が現れません。VS Codeの公式手順は[Install from a VSIX](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix)にあります。
+VSIXから入れた拡張機能は、自動更新されません。更新版を作った場合は、同じ手順で入れ直してください。入れ直したあとはウィンドウの再読み込み(`Developer: Reload Window`)を行い、拡張機能ビューでバージョンが `0.3.1` になっていることを確認してください。`0.3.0`にはWebview用バンドルの起動不具合があるため、Mermaidを使う場合は`0.3.1`へ更新してください。VS Codeの公式手順は[Install from a VSIX](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix)にあります。
 
 ### 3. Cursorへ入れる
 
@@ -90,6 +90,12 @@ Comment:
 | `markdownPreviewAnnotator.lineHeight` | `normal` | 行間。`compact`/`normal`/`relaxed`。 |
 | `markdownPreviewAnnotator.contentWidth` | `full` | 本文幅。`full`は横幅いっぱい、`readable`は最大980px。 |
 
+## Mermaid描画
+
+`mermaid`コードブロックは、[`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid)を使ってSVGへ変換します。背景・文字・線・アクセントの色にはVS Codeのテーマ変数を渡すため、ライト／ダークテーマへ自動で追従します。レンダラーは`media/main.js`へまとめてバンドルされ、外部CDNや別プロセスは使いません。
+
+現在対応している図は、Flowchart、State、Sequence、Class、ER、XY Chartです。Mindmap、Gantt、Git Graph、C4、Pie、Timeline、Architecture Diagramなどの未対応記法は、元コードを残したまま「図を描画できませんでした」と表示します。
+
 ## 注釈の保存と復元
 
 コメントはファイルごとに `workspaceState` へ保存します。同じワークスペースでプレビューを開き直すと復元されます。Gitには追加されず、ほかの端末やメンバーとは同期されません。
@@ -119,8 +125,7 @@ VS Code／Cursorでこのフォルダーを開き、`F5` を押すとビルド�
 配布物に `node_modules` は含まれません。
 
 - [`markdown-it`](https://github.com/markdown-it/markdown-it) と [`highlight.js`](https://github.com/highlightjs/highlight.js) は `dist/extension.js` にバンドルされます。
-- Webviewスクリプトは `media/main.js` にバンドルされます。
-- [`mermaid`](https://github.com/mermaid-js/mermaid) はビルド時に `media/mermaid.min.js` へコピーされ、Webviewで読み込まれます。
+- Webviewスクリプトと[`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid)は `media/main.js` にまとめてバンドルされます。
 - 本文・コード・テーブルの配色はすべてVS Codeテーマ変数と、テーマ種別(`vscode-dark`/`vscode-light`)に連動した自前パレットで決まります。GitHub由来のCSSには依存しません。
 
 ## ライセンス
