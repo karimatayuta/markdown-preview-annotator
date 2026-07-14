@@ -1,0 +1,19 @@
+# 拡張の実行に必要なのは dist/(バンドル済み本体)と media/(webview資産)のみ。
+# markdown-it / highlight.js は dist/extension.js に、webviewスクリプトは media/main.js に
+# バンドルされ、mermaid.min.js はビルド時に media/ へコピーされる。
+.git/**
+.gitignore
+.github/**
+.vscode/**
+.vscode-test/**
+.agents/**
+.claude/**
+.codex/**
+bun.lock
+coverage/**
+node_modules/**
+src/**
+test/**
+tsconfig.json
+*.vsix
+.DS_Store
